@@ -1,0 +1,73 @@
+<h1 id="selinux-security-enhanced-linux-">SELinux (Security Enhanced Linux)</h1>
+<p>Linux / Unix systems traditionally provided only DAC (Discretionary Access Control).
+DAC refers to access control based on user, group and others permissions.
+Using DAC we can control what actions each entity can perform on a file, for example read from it, or execute it, or write to it, or a combination of these actions, or none of these actions.</p>
+<p>SELinux provides MAC (Mandatory Access Control) which can be used for fine-grained access control. Note, MAC does not replace DAC, it works on top of it to provide an additional layer of security.</p>
+<p>On a mandatory access control system (MAC), policies are defined which are administratively enforced, and they regulate access.
+As mentioned before MAC works on top of DAC, so even if DAC rules allow some access, it is possible that MAC blocks that access.</p>
+<p>The policies, known as SELinux policies can be extremely fine grained, and control an object’s access to:
+Files, Processes, Ports, Sockets, Memory, Directories, etc.</p>
+<p>A SELinux policy is essentially a set of rules, an example of a rule is one which allows a process to read files in /etc/infobin/custom, for example, without this rule the access will be prohibited. There are two types of policies broadly:
+Targeted Policy (or Default Policy): Only targeted processes are protected by SELinux, everything else if unconfined. By targeted processes we refer to the processes which have associated SELinux policies.
+Multi-Level Security Policy (or mls): More complex, and hence more powerful.</p>
+<p>Some important commands and output:</p>
+<pre><code class="lang-bash">bash$ cat /etc/selinux/config
+<span class="hljs-meta"># This file controls the state of SELinux on the system.</span>
+<span class="hljs-meta"># SELINUX= can take one of these three values:</span>
+<span class="hljs-meta"># enforcing - SELinux security policy is enforced.</span>
+<span class="hljs-meta"># permissive - SELinux prints warnings instead of enforcing.</span>
+<span class="hljs-meta"># disabled - No SELinux policy is loaded.</span>
+SELINUX=permissive
+<span class="hljs-meta"># SELINUXTYPE= can take one of these two values:</span>
+<span class="hljs-meta"># default - equivalent to the old strict and targeted policies</span>
+<span class="hljs-meta"># mls     - Multi-Level Security (for military and educational use)</span>
+<span class="hljs-meta"># src     - Custom policy built from source</span>
+SELINUXTYPE=<span class="hljs-keyword">default</span>
+
+<span class="hljs-meta"># SETLOCALDEFS= Check local definition changes</span>
+SETLOCALDEFS=<span class="hljs-number">0</span>
+bash$
+</code></pre>
+<p>Note:
+SELinux policy type (targeted or mls) is a system wide property.
+Here, default indicates the policy type is targeted.
+SELinux has 2 states: Enabled or Disabled. When it is enabled, SELinux supports 2 modes: Permissive and Enforcing
+As can be seen in the adobe output, in the permissive mode, SELinux just logs warnings, if any access rule is branched, however it does not block the access. In the enforcing mode, the SELinux security policy is actually enforced, i.e. illegal accesses are blocked. </p>
+<pre><code class="lang-bash">sh-<span class="hljs-number">5.2</span><span class="hljs-meta"># getenforce</span>
+Enforcing
+sh-<span class="hljs-number">5.2</span><span class="hljs-meta">#</span>
+</code></pre>
+<p>Note:
+Get SELinux operating mode.
+SELinux mode is a system-wide property.</p>
+<h2 id="how-selinux-works">How SELinux works</h2>
+<p>SELinux uses two important concepts:
+Labelling
+Type Enforcement</p>
+<p>Labelling: Each object or entity is labelled with a SELinux Context (also known as SELinux Label). Object could be: file, directory, process, port, socket etc.
+For files and directories these labels are stored as extended attributes, in the file system itself.
+For processes and ports, these labels are managed by the Kernel.</p>
+<p>Format of the label:
+user:role:type:level
+To view a file or directory label, use the command:
+Files: ls -Z <path_to_file>
+Directories: ls -Zd <path_to_file>
+As mentioned before for files and directories the label (or SELinux context) is stored as part of extended attributes , on the filesystem.</p>
+<p>Checking some labels:</p>
+<p>Executable file:</p>
+<pre><code class="lang-bash"><span class="hljs-selector-tag">sh-5</span><span class="hljs-selector-class">.2</span># <span class="hljs-selector-tag">ls</span> <span class="hljs-selector-tag">-Z</span> <span class="hljs-selector-tag">nft</span>
+<span class="hljs-selector-tag">system_u</span><span class="hljs-selector-pseudo">:object_r</span><span class="hljs-selector-pseudo">:iptables_exec_t</span><span class="hljs-selector-pseudo">:s0</span> <span class="hljs-selector-tag">nft</span>
+<span class="hljs-selector-tag">sh-5</span><span class="hljs-selector-class">.2</span>#
+</code></pre>
+<p>In the above label (SELinux context), system_u is the user, object_r is the role, the type is: iptables_exec_t, the level is 0.</p>
+<p>To view process labels, use the “ps axZ” command:
+system_u:system_r:syslogd_t:s0     1757 ?        Ssl   11:52 /usr/sbin/rsyslogd</p>
+<p>To view directory label: use the “ls -Zd &lt;&gt;” command.</p>
+<p>We have seen labels, above, the “type” field in the label, the next important concept used by SELinux is: Type Enforcement.</p>
+<p>Type Enforcement: Take an example, a process running in the httpd_t context, probably has a good reason to interact with a file, labelled httpd_config_t.
+On the contrary it does not make sense for a process running in the httpd_t context to interact with a file labelled with the shadow_t context (password related file).</p>
+<p>Type Enforcement rules are part of the policy, for example, a type enforcement rule could state that “a process running in the httpd_t context, can read from a file labelled httpd_config_t”.</p>
+<p>Note on the Label / Content
+The context is set when the file is created, this context is based on the parent directory’s context, i.e. it is inherited.
+We can use commands, like chcon or restorecon to change the context of a file.</p>
+<p>Booleans: Represent on / off settings in SELinux, for example if the NTP server should be allowed to access the home directory.</p>
