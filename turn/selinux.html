@@ -1,4 +1,4 @@
-[200~SELinux
+SELinux
 Linux / Unix systems traditionally provided only DAC (Discretionary Access Control).
 DAC refers to access control based on user, group and others permissions.
 Using DAC we can control what actions each entity can perform on a file, for example read from it, or execute it, or write to it, or a combination of these actions, or none of these actions.
@@ -98,4 +98,3 @@ The context is set when the file is created, this context is based on the parent
 We can use commands, like chcon or restorecon to change the context of a file.
 
 Booleans: Represent on / off settings in SELinux, for example if the NTP server should be allowed to access the home directory.
-
